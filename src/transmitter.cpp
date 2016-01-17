@@ -61,6 +61,12 @@ void *data_handler(char data[], int size) {
 
 	radio.stopListening();
 
+	printf("\n");
+
+        for (int i = 0; i < size; i++) {
+		printf("[%d]", data[i]);
+        }
+
 	fflush(stdout);
 	return 0;
 }
