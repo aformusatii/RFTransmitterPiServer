@@ -50,7 +50,7 @@ void dataReceivedIRQ() {
 void *data_handler(char data[], int size) {
 	bool ok = radio.write(data, size);
 
-	if (ok)
+	/* if (ok)
 	{
 		printf("ok...\n\r");
 	}
@@ -59,14 +59,15 @@ void *data_handler(char data[], int size) {
 		printf("failed.\n\r");
 	}
 
-	radio.stopListening();
-
 	printf("\n");
 
         for (int i = 0; i < size; i++) {
 		printf("[%d]", data[i]);
         }
 
-	fflush(stdout);
+	fflush(stdout); */
+
+        radio.stopListening();
+
 	return 0;
 }
