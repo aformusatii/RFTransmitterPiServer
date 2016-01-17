@@ -108,7 +108,9 @@ void *default_client_handler(void *socket_desc)
 
         char client_data[read_size];
 
-        strncpy(client_data, client_message, read_size);
+        for (int i = 0; i < read_size; i++) {
+        	client_data[i] = client_message[i];
+        }
 
         data_handler(client_data, read_size);
 
