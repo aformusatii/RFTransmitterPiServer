@@ -41,7 +41,7 @@
  */
 
 /* =========== SPI & GPIO configuration ========= */
-#define SPI_SPEED 250000
+#define SPI_SPEED 2500000
 #define SPI_CHANNEL 1
 #define SPI_CSN 10 // BCM 08
 #define SPI_CE  5 // BCM 24
