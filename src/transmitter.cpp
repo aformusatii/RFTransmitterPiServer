@@ -14,6 +14,10 @@ void *data_handler(char[], int);
 SocketServer socketServer;
 RF24 radio;
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
+volatile bool inProcess = false;
+volatile int try_count = 0;
+
+pthread_mutex_t process_mutex;
 
 int main(int argc, char** argv)
 {
@@ -37,6 +41,8 @@ int main(int argc, char** argv)
   radio.printDetails();
   radio.stopListening();
 
+  fflush(stdout);
+  
   while (1) {
 	  sleep(1000);
   }
@@ -48,26 +54,45 @@ void dataReceivedIRQ() {
 }
 
 void *data_handler(char data[], int size) {
+
+	printf("\nT%d\n", try_count++);
+
+	pthread_mutex_lock(&process_mutex);
+	if (inProcess) {
+		pthread_mutex_unlock(&process_mutex);
+		return 0;
+	}
+	inProcess = true;
+	pthread_mutex_unlock(&process_mutex);
+	
+	printf("\nstart\n");
+
 	bool ok = radio.write(data, size);
 
 	/* if (ok)
 	{
-		printf("ok...\n\r");
+		printf("ok...\n");
 	}
 	else
 	{
-		printf("failed.\n\r");
+		printf("failed.\n");
 	}
 
 	printf("\n");
 
-        for (int i = 0; i < size; i++) {
+		for (int i = 0; i < size; i++) {
 		printf("[%d]", data[i]);
-        }
+		}
 
 	fflush(stdout); */
 
-        radio.stopListening();
+	radio.stopListening();
+
+	__msleep(10);
+
+	inProcess = false;
+	printf("\nend\n");
+	fflush(stdout);
 
 	return 0;
 }

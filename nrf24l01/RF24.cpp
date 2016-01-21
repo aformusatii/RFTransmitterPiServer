@@ -61,7 +61,7 @@ uint8_t RF24::write_register(uint8_t reg, uint8_t value)
 {
   uint8_t status;
 
-  IF_SERIAL_DEBUG(printf_P(PSTR("write_register(%02x,%02x)\r\n"),reg,value));
+  IF_SERIAL_DEBUG(printf_P(PSTR("write_register(%02x,%02x)\n"),reg,value));
 
   HP.csn(LOW);
   status = HP.spiTransfer( W_REGISTER | ( REGISTER_MASK & reg ) );
@@ -82,7 +82,7 @@ uint8_t RF24::write_payload(const void* buf, uint8_t len, const uint8_t writeTyp
   uint8_t data_len = MIN(len,payload_size);
   uint8_t blank_len = dynamic_payloads_enabled ? 0 : payload_size - data_len;
 
-  //printf_P(PSTR("[Writing %u bytes %u blanks]\r\n"),data_len,blank_len);
+  //printf_P(PSTR("[Writing %u bytes %u blanks]\n"),data_len,blank_len);
 
   HP.csn(LOW);
   status = HP.spiTransfer( writeType );
@@ -105,7 +105,7 @@ uint8_t RF24::read_payload(void* buf, uint8_t len)
   uint8_t data_len = MIN(len,payload_size);
   uint8_t blank_len = dynamic_payloads_enabled ? 0 : payload_size - data_len;
   
-  //printf_P(PSTR("[Reading %u bytes %u blanks]\r\n"),data_len,blank_len);
+  //printf_P(PSTR("[Reading %u bytes %u blanks]\n"),data_len,blank_len);
   
   HP.csn(LOW);
   status = HP.spiTransfer( R_RX_PAYLOAD );
@@ -161,7 +161,7 @@ uint8_t RF24::get_status(void)
 
 void RF24::print_status(uint8_t status)
 {
-  printf_P(PSTR("STATUS\t\t = 0x%02x RX_DR=%x TX_DS=%x MAX_RT=%x RX_P_NO=%x TX_FULL=%x\r\n"),
+  printf_P(PSTR("STATUS\t\t = 0x%02x RX_DR=%x TX_DS=%x MAX_RT=%x RX_P_NO=%x TX_FULL=%x\n"),
            status,
            (status & _BV(RX_DR))?1:0,
            (status & _BV(TX_DS))?1:0,
@@ -175,7 +175,7 @@ void RF24::print_status(uint8_t status)
 
 void RF24::print_observe_tx(uint8_t value)
 {
-  printf_P(PSTR("OBSERVE_TX=%02x: POLS_CNT=%x ARC_CNT=%x\r\n"),
+  printf_P(PSTR("OBSERVE_TX=%02x: POLS_CNT=%x ARC_CNT=%x\n"),
            value,
            (value >> PLOS_CNT) & B1111,
            (value >> ARC_CNT) & B1111
@@ -190,7 +190,7 @@ void RF24::print_byte_register(const char* name, uint8_t reg, uint8_t qty)
   printf_P(PSTR(PRIPSTR"\t%c ="),name,extra_tab);
   while (qty--)
     printf_P(PSTR(" 0x%02x"),read_register(reg++));
-  printf_P(PSTR("\r\n"));
+  printf_P(PSTR("\n"));
 }
 
 /****************************************************************************/
@@ -211,7 +211,7 @@ void RF24::print_address_register(const char* name, uint8_t reg, uint8_t qty)
       printf_P(PSTR("%02x"),*bufptr);
   }
 
-  printf_P(PSTR("\r\n"));
+  printf_P(PSTR("\n"));
 }
 
 /****************************************************************************/
@@ -312,10 +312,10 @@ void RF24::printDetails(void)
   print_byte_register(PSTR("CONFIG"),CONFIG);
   print_byte_register(PSTR("DYNPD/FEATURE"),DYNPD,2);
 
-  printf_P(PSTR("Data Rate\t = "PRIPSTR"\r\n"), rf24_datarate_e_str_P[getDataRate()]);
-  printf_P(PSTR("Model\t\t = "PRIPSTR"\r\n"), rf24_model_e_str_P[isPVariant()]);
-  printf_P(PSTR("CRC Length\t = "PRIPSTR"\r\n"), rf24_crclength_e_str_P[getCRCLength()]);
-  printf_P(PSTR("PA Power\t = "PRIPSTR"\r\n"), rf24_pa_dbm_e_str_P[getPALevel()]);
+  printf_P(PSTR("Data Rate\t = "PRIPSTR"\n"), rf24_datarate_e_str_P[getDataRate()]);
+  printf_P(PSTR("Model\t\t = "PRIPSTR"\n"), rf24_model_e_str_P[isPVariant()]);
+  printf_P(PSTR("CRC Length\t = "PRIPSTR"\n"), rf24_crclength_e_str_P[getCRCLength()]);
+  printf_P(PSTR("PA Power\t = "PRIPSTR"\n"), rf24_pa_dbm_e_str_P[getPALevel()]);
 }
 
 /****************************************************************************/
@@ -447,16 +447,17 @@ bool RF24::write( const void* buf, uint8_t len, const bool multicast )
   // Generally much faster.
   uint8_t observe_tx;
   uint8_t status;
-  HP.startTimer();
-  const uint16_t timeout = getMaxTimeout() ; //us to wait for timeout
+  uint8_t retry_count = 0;
+  //HP.startTimer();
+  //const uint16_t timeout = getMaxTimeout() ; //us to wait for timeout
 
   // Monitor the send
   do
   {
     status = read_register(OBSERVE_TX,&observe_tx,1);
-    IF_SERIAL_DEBUG(printf_P(PSTR("observe_tx = %02x\r\n"),observe_tx));
+    IF_SERIAL_DEBUG(printf_P(PSTR("observe_tx = %02x\n"),observe_tx));
   }
-  while( ! ( status & ( _BV(TX_DS) | _BV(MAX_RT) ) ) && ( HP.getElapsedMilliseconds() < timeout ) );
+  while( ! ( status & ( _BV(TX_DS) | _BV(MAX_RT) ) )  && (retry_count++ < 20) );
 
   // The part above is what you could recreate with your own interrupt handler,
   // and then call this when you got an interrupt
@@ -471,13 +472,13 @@ bool RF24::write( const void* buf, uint8_t len, const bool multicast )
   whatHappened(tx_ok,tx_fail,ack_payload_available);
 
   result = tx_ok;
-  IF_SERIAL_DEBUG(printf_P(PSTR(result?"...OK.\r\n":"...Failed\r\n")));
+  IF_SERIAL_DEBUG(printf_P(PSTR(result?"...OK.\n":"...Failed\n")));
 
   // Handle the ack packet
   if ( ack_payload_available )
   {
     ack_payload_length = getDynamicPayloadSize();
-    IF_SERIAL_DEBUG(printf_P(PSTR("[AckPacket] ack_payload_length = %d\r\n"),ack_payload_length));
+    IF_SERIAL_DEBUG(printf_P(PSTR("[AckPacket] ack_payload_length = %d\n"),ack_payload_length));
   }
 
   return result;
@@ -683,7 +684,7 @@ void RF24::enableDynamicPayloads(void)
     write_register(FEATURE,read_register(FEATURE) | _BV(EN_DPL) );
   }
 
-  IF_SERIAL_DEBUG(printf_P(PSTR("FEATURE=%i\r\n"),read_register(FEATURE)));
+  IF_SERIAL_DEBUG(printf_P(PSTR("FEATURE=%i\n"),read_register(FEATURE)));
 
   // Enable dynamic payload on all pipes
   //
@@ -712,7 +713,7 @@ void RF24::enableAckPayload(void)
     write_register(FEATURE,read_register(FEATURE) | _BV(EN_DYN_ACK) | _BV(EN_ACK_PAY) | _BV(EN_DPL) );
   }
 
-  IF_SERIAL_DEBUG(printf_P(PSTR("FEATURE=%i\r\n"),read_register(FEATURE)));
+  IF_SERIAL_DEBUG(printf_P(PSTR("FEATURE=%i\n"),read_register(FEATURE)));
 
   //
   // Enable dynamic payload on pipes 0 & 1

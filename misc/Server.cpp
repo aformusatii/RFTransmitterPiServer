@@ -67,7 +67,7 @@ void SocketServer::addDataListner(void *(*d_handler)(char[], int)) {
 void *server_handler(void *args) {
     while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
-        // puts("Connection accepted");
+        puts("\nConnection accepted");
 
         pthread_t sniffer_thread;
         new_sock = (int*) malloc(1);
@@ -78,9 +78,11 @@ void *server_handler(void *args) {
             perror("could not create thread");
             return 1;
         }
+		
+		fflush(stdout);
 
         //Now join the thread , so that we dont terminate before the thread
-        //pthread_join( sniffer_thread , NULL);
+        pthread_join( sniffer_thread , NULL);
         //puts("Handler assigned");
     }
 
@@ -100,34 +102,33 @@ void *default_client_handler(void *socket_desc)
     int read_size;
     char client_message[255];
 
+	puts("\n Prepare to read");
+	fflush(stdout);
+	
     //Receive a message from client
-    while( (read_size = recv(sock , client_message , 255 , 0)) > 0 )
-    {
-    	//printf("\nread_size=%d", read_size);
-        //fflush(stdout);
+    read_size = recv(sock , client_message , 255 , 0);
 
+	if (read_size > 0) {
         char client_data[read_size];
-
         for (int i = 0; i < read_size; i++) {
         	client_data[i] = client_message[i];
         }
-
+		puts("\nHave read");
         data_handler(client_data, read_size);
-
-        //Send the message back to client
-        write(sock, "OK", 2);
-    }
+	}
+	
+	close(sock);
 
     /* if(read_size == 0)
     {
         puts("Client disconnected");
         fflush(stdout);
-    } */
+    }
 
     if(read_size == -1)
     {
         perror("recv failed");
-    }
+    } */
 
     //Free the socket pointer
     free(socket_desc);
