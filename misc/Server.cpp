@@ -7,10 +7,9 @@
 volatile int socket_desc , client_sock , c , *new_sock;
 volatile struct sockaddr_in server , client;
 
-void *(*client_handler)(void *);
 void *(*data_handler)(char[], int);
 
-void *default_client_handler(void *);
+void client_handler(void *);
 void *server_handler(void *);
 
 SocketServer::SocketServer() {
@@ -41,9 +40,6 @@ void SocketServer::init(uint16_t localPort) {
     //Listen
     listen(socket_desc , 3);
 
-    // Set default client handler
-    client_handler = default_client_handler;
-
     //Accept and incoming connection
     puts("Waiting for incoming connections...");
     c = sizeof(struct sockaddr_in);
@@ -56,10 +52,6 @@ void SocketServer::init(uint16_t localPort) {
     }
 }
 
-void SocketServer::addClientListner(void *(*c_handler)(void *)) {
-	client_handler = c_handler;
-}
-
 void SocketServer::addDataListner(void *(*d_handler)(char[], int)) {
 	data_handler = d_handler;
 }
@@ -67,23 +59,12 @@ void SocketServer::addDataListner(void *(*d_handler)(char[], int)) {
 void *server_handler(void *args) {
     while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
-        puts("\nConnection accepted");
+        // puts("\nConnection accepted");
 
-        pthread_t sniffer_thread;
         new_sock = (int*) malloc(1);
         *new_sock = client_sock;
 
-        if( pthread_create( &sniffer_thread , NULL ,  client_handler , (void*) new_sock) < 0)
-        {
-            perror("could not create thread");
-            return 1;
-        }
-		
-		fflush(stdout);
-
-        //Now join the thread , so that we dont terminate before the thread
-        pthread_join( sniffer_thread , NULL);
-        //puts("Handler assigned");
+        client_handler((void*) new_sock);
     }
 
     if (client_sock < 0)
@@ -95,15 +76,12 @@ void *server_handler(void *args) {
 	return 0;
 }
 
-void *default_client_handler(void *socket_desc)
+void client_handler(void *socket_desc)
 {
     //Get the socket descriptor
     int sock = *(int*) socket_desc;
     int read_size;
     char client_message[255];
-
-	puts("\n Prepare to read");
-	fflush(stdout);
 	
     //Receive a message from client
     read_size = recv(sock , client_message , 255 , 0);
@@ -113,25 +91,11 @@ void *default_client_handler(void *socket_desc)
         for (int i = 0; i < read_size; i++) {
         	client_data[i] = client_message[i];
         }
-		puts("\nHave read");
         data_handler(client_data, read_size);
 	}
 	
 	close(sock);
 
-    /* if(read_size == 0)
-    {
-        puts("Client disconnected");
-        fflush(stdout);
-    }
-
-    if(read_size == -1)
-    {
-        perror("recv failed");
-    } */
-
     //Free the socket pointer
     free(socket_desc);
-
-    return 0;
 }

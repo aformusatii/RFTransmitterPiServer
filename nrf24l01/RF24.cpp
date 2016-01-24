@@ -457,7 +457,7 @@ bool RF24::write( const void* buf, uint8_t len, const bool multicast )
     status = read_register(OBSERVE_TX,&observe_tx,1);
     IF_SERIAL_DEBUG(printf_P(PSTR("observe_tx = %02x\n"),observe_tx));
   }
-  while( ! ( status & ( _BV(TX_DS) | _BV(MAX_RT) ) )  && (retry_count++ < 20) );
+  while( ! ( status & ( _BV(TX_DS) | _BV(MAX_RT) ) )  && (retry_count++ < 10) );
 
   // The part above is what you could recreate with your own interrupt handler,
   // and then call this when you got an interrupt

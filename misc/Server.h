@@ -11,6 +11,5 @@ public:
 	SocketServer();
 
 	void init(uint16_t localPort);
-    void addClientListner(void *(*)(void *));
     void addDataListner(void *(*)(char[], int));
 };
