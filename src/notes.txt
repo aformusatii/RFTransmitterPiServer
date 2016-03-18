@@ -1,0 +1,2 @@
+autostartup: /etc/init.d/my_startup
+sudo update-rc.d my_startup defaults
