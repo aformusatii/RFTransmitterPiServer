@@ -6,6 +6,7 @@ void *data_handler(char[], int);
 SocketServer socketServer;
 RF24 radio;
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
+volatile uint8_t rf_channel = 115;
 
 int main(int argc, char** argv)
 {
@@ -21,7 +22,7 @@ int main(int argc, char** argv)
   radio.setRetries(15,15);
   radio.setPayloadSize(8);
   radio.setPALevel(RF24_PA_MAX);
-  radio.setChannel(115);
+  radio.setChannel(rf_channel);
 
   radio.openWritingPipe(pipes[0]);
   radio.openReadingPipe(1,pipes[1]);
@@ -42,6 +43,10 @@ void dataReceivedIRQ() {
 }
 
 void *data_handler(char data[], int size) {
+	if ((size > 1) && rf_channel != data[0]) {
+		radio.setChannel(rf_channel);
+	}
+
 	radio.write(data, size);
 	radio.stopListening();
 	fflush(stdout);
