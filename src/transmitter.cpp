@@ -43,12 +43,24 @@ void dataReceivedIRQ() {
 }
 
 void *data_handler(char data[], int size) {
-	if ((size > 1) && rf_channel != data[0]) {
-		rf_channel = data[0];
-		radio.setChannel(rf_channel);
+	if (size > 1) {
+                if (rf_channel != data[0]) {
+ 		    rf_channel = data[0];
+		    radio.setChannel(rf_channel);
+                }
+
+		char sub_data[size - 1];
+		for (int i = 1; i < size; i++) {
+			sub_data[i - 1] = data[i];
+                        printf("[%d->%d]\n", i, data[i]);
+		}
+                //printf("{%d}\n", size);
+
+		radio.write(sub_data, size - 1);
+	} else {
+		radio.write(data, size);
 	}
 
-	radio.write(data, size);
 	radio.stopListening();
 	fflush(stdout);
 

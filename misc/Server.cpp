@@ -88,9 +88,12 @@ void client_handler(void *socket_desc)
 
 	if (read_size > 0) {
         char client_data[read_size];
+        //printf("\nSocket Received: ");
         for (int i = 0; i < read_size; i++) {
         	client_data[i] = client_message[i];
+                //printf("%d|", client_message[i]);
         }
+        //printf(" END\n");
         data_handler(client_data, read_size);
 	}
 	
