@@ -44,6 +44,7 @@ void dataReceivedIRQ() {
 
 void *data_handler(char data[], int size) {
 	if ((size > 1) && rf_channel != data[0]) {
+		rf_channel = data[0];
 		radio.setChannel(rf_channel);
 	}
 
